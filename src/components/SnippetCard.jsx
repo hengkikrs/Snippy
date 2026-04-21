@@ -34,7 +34,7 @@ export function SnippetCard({ snippet, index, onCopy, onEdit, onDelete, onToggle
     e.stopPropagation()
     navigator.clipboard.writeText(snippet.content).then(() => {
       setCopied(true)
-      onCopy()
+      onCopy(snippet)
       setTimeout(() => setCopied(false), 1800)
     })
   }
