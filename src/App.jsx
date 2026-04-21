@@ -7,10 +7,12 @@ import { SnippetCard } from './components/SnippetCard'
 import { Modal } from './components/Modal'
 import { Toast } from './components/Toast'
 import { Icons } from './components/Icons'
+import { ReportPage } from './components/ReportPage'
 
 import { useSnippets, useFilteredSnippets } from './hooks/useSnippets'
 import { useToast } from './hooks/useToast'
 import { parseImportFile, exportJSON, uid } from './utils/storage'
+import { trackEvent, EVENTS } from './utils/analytics'
 import { supabase } from './utils/supabase'
 
 import styles from './App.module.css'
@@ -23,6 +25,7 @@ export default function App() {
     () => window.matchMedia?.('(prefers-color-scheme: dark)').matches
   )
   const [modal, setModal] = useState({ open: false, editing: null })
+  const [page, setPage] = useState('home') // 'home' | 'report'
 
   const {
     snippets,
@@ -45,6 +48,9 @@ export default function App() {
   const filteredRef = useRef(filtered)
 
   useEffect(() => { filteredRef.current = filtered }, [filtered])
+
+  // Track page view once on mount
+  useEffect(() => { trackEvent(EVENTS.PAGE_VIEW) }, [])
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
   }, [darkMode])
@@ -92,7 +98,8 @@ export default function App() {
           const snippet = filteredRef.current[num - 1]
           if (!snippet) return
           navigator.clipboard.writeText(snippet.content).then(() => {
-            addToast(`#${num} "${snippet.title}" disalin ✓`)
+            addToast(`#\${num} "\${snippet.title}" disalin ✓`)
+            trackEvent(EVENTS.COPY, snippet)
           })
         }
       }
@@ -106,9 +113,11 @@ export default function App() {
       if (modal.editing) {
         await editSnippet(modal.editing.id, { title, content, tags })
         addToast('Snippet diperbarui ✓')
+        trackEvent(EVENTS.EDIT, { id: modal.editing.id, title })
       } else {
-        await addSnippet({ title, content, tags })
+        const s = await addSnippet({ title, content, tags })
         addToast('Snippet ditambahkan ✓')
+        trackEvent(EVENTS.ADD, s)
       }
       setModal({ open: false, editing: null })
     } catch (e) {
@@ -121,6 +130,7 @@ export default function App() {
     try {
       await removeSnippet(id)
       addToast('Snippet dihapus')
+      trackEvent(EVENTS.DELETE, { id })
     } catch (e) {
       addToast('Error: ' + e.message)
     }
@@ -134,7 +144,7 @@ export default function App() {
     }
   }
 
-  const handleExport = () => exportJSON(snippets)
+  const handleExport = () => { exportJSON(snippets); trackEvent(EVENTS.EXPORT) }
 
   const handleImport = async (file) => {
     try {
@@ -156,6 +166,10 @@ export default function App() {
     } catch (e) {
       addToast('Import error: ' + e.message)
     }
+  }
+
+  if (page === 'report') {
+    return <ReportPage onBack={() => setPage('home')} />
   }
 
   if (loading) {
@@ -186,6 +200,7 @@ export default function App() {
         onAdd={() => setModal({ open: true, editing: null })}
         onImport={handleImport}
         onExport={handleExport}
+        onReport={() => setPage('report')}
         snippets={snippets}
       />
 
@@ -241,7 +256,7 @@ export default function App() {
                 key={s.id}
                 snippet={s}
                 index={i}
-                onCopy={() => addToast('Disalin ke clipboard! ✓')}
+                onCopy={(s) => { addToast('Disalin ke clipboard! ✓'); trackEvent(EVENTS.COPY, s) }}
                 onEdit={(s) => setModal({ open: true, editing: s })}
                 onDelete={handleDelete}
                 onTogglePin={handleTogglePin}
