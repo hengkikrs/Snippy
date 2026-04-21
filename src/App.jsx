@@ -98,7 +98,7 @@ export default function App() {
           const snippet = filteredRef.current[num - 1]
           if (!snippet) return
           navigator.clipboard.writeText(snippet.content).then(() => {
-            addToast(`#\${num} "\${snippet.title}" disalin ✓`)
+            addToast(`#${num} "${snippet.title}" disalin ✓`)
             trackEvent(EVENTS.COPY, snippet)
           })
         }
