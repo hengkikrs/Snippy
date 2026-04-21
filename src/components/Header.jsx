@@ -3,7 +3,7 @@ import { Icons } from './Icons'
 import { parseImportFile } from '../utils/storage'
 import styles from './Header.module.css'
 
-export function Header({ search, onSearch, darkMode, onToggleDark, onAdd, onImport, onExport }) {
+export function Header({ search, onSearch, darkMode, onToggleDark, onAdd, onImport, onExport, onReport }) {
   const fileRef = useRef(null)
 
   const handleImport = async (e) => {
@@ -43,6 +43,11 @@ export function Header({ search, onSearch, darkMode, onToggleDark, onAdd, onImpo
 
           <button className="btn btn-icon" onClick={onToggleDark} title="Toggle dark mode">
             {darkMode ? <Icons.Sun /> : <Icons.Moon />}
+          </button>
+
+          <button className="btn hide-mobile" onClick={onReport} title="Report">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Report</span>
           </button>
 
           <button className="btn btn-primary" onClick={onAdd}>
