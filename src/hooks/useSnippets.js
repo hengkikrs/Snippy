@@ -1,57 +1,66 @@
-import { useState, useEffect, useMemo } from 'react'
-import { loadData, saveData, uid } from '../utils/storage'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import {
+  fetchSnippets,
+  createSnippet,
+  updateSnippet,
+  deleteSnippet,
+  reorderSnippets,
+} from '../utils/storage'
 
 export function useSnippets() {
-  const [snippets, setSnippets] = useState(loadData)
+  const [snippets, setSnippets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
+  // Initial load
   useEffect(() => {
-    saveData(snippets)
+    fetchSnippets()
+      .then(setSnippets)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const addSnippet = useCallback(async ({ title, content, tags }) => {
+    const snippet = await createSnippet({ title, content, tags })
+    setSnippets((s) => [snippet, ...s])
+    return snippet
+  }, [])
+
+  const editSnippet = useCallback(async (id, fields) => {
+    await updateSnippet(id, fields)
+    setSnippets((s) => s.map((x) => (x.id === id ? { ...x, ...fields } : x)))
+  }, [])
+
+  const removeSnippet = useCallback(async (id) => {
+    await deleteSnippet(id)
+    setSnippets((s) => s.filter((x) => x.id !== id))
+  }, [])
+
+  const togglePin = useCallback(async (id) => {
+    const snippet = snippets.find((x) => x.id === id)
+    if (!snippet) return
+    const pinned = !snippet.pinned
+    await updateSnippet(id, { pinned })
+    setSnippets((s) => s.map((x) => (x.id === id ? { ...x, pinned } : x)))
   }, [snippets])
 
-  const addSnippet = ({ title, content, tags }) => {
-    setSnippets((s) => [
-      { id: uid(), title, content, tags, pinned: false, created: Date.now() },
-      ...s,
-    ])
-  }
+  // dataOrFn: array baru atau (prev) => array (untuk import)
+  const importSnippets = useCallback((dataOrFn) => {
+    setSnippets(dataOrFn)
+  }, [])
 
-  const updateSnippet = (id, { title, content, tags }) => {
-    setSnippets((s) =>
-      s.map((x) => (x.id === id ? { ...x, title, content, tags } : x))
-    )
-  }
-
-  const deleteSnippet = (id) => {
-    setSnippets((s) => s.filter((x) => x.id !== id))
-  }
-
-  const togglePin = (id) => {
-    setSnippets((s) =>
-      s.map((x) => (x.id === id ? { ...x, pinned: !x.pinned } : x))
-    )
-  }
-
-  const reorder = (fromId, toId) => {
+  const reorder = useCallback(async (orderedIds) => {
     setSnippets((prev) => {
-      const list = [...prev]
-      const fromIdx = list.findIndex((x) => x.id === fromId)
-      const toIdx = list.findIndex((x) => x.id === toId)
-      if (fromIdx === -1 || toIdx === -1) return prev
-      const [moved] = list.splice(fromIdx, 1)
-      list.splice(toIdx, 0, moved)
-      return list
+      const map = Object.fromEntries(prev.map((s) => [s.id, s]))
+      return orderedIds.map((id) => map[id]).filter(Boolean)
     })
-  }
-
-  // Accepts either a new array or a functional updater (prev) => newArray
-  const importSnippets = (dataOrUpdater) => {
-    setSnippets(dataOrUpdater)
-  }
+    await reorderSnippets(orderedIds)
+  }, [])
 
   const allTags = useMemo(() => {
     const map = {}
     snippets.forEach((s) =>
-      s.tags.forEach((t) => {
+      s.tags?.forEach((t) => {
         map[t] = (map[t] || 0) + 1
       })
     )
@@ -60,10 +69,12 @@ export function useSnippets() {
 
   return {
     snippets,
+    loading,
+    error,
     allTags,
     addSnippet,
-    updateSnippet,
-    deleteSnippet,
+    editSnippet,
+    removeSnippet,
     togglePin,
     reorder,
     importSnippets,
@@ -77,7 +88,7 @@ export function useFilteredSnippets(snippets, { search, activeTag }) {
     if (activeTag === 'Pinned') {
       list = list.filter((s) => s.pinned)
     } else if (activeTag !== 'All') {
-      list = list.filter((s) => s.tags.includes(activeTag))
+      list = list.filter((s) => s.tags?.includes(activeTag))
     }
 
     if (search) {
@@ -86,7 +97,7 @@ export function useFilteredSnippets(snippets, { search, activeTag }) {
         (s) =>
           s.title.toLowerCase().includes(q) ||
           s.content.toLowerCase().includes(q) ||
-          s.tags.some((t) => t.toLowerCase().includes(q))
+          s.tags?.some((t) => t.toLowerCase().includes(q))
       )
     }
 
