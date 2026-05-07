@@ -17,7 +17,9 @@ export function Header({ search, onSearch, darkMode, onToggleDark, onAdd, onImpo
     <header className={styles.header}>
       <div className={styles.inner}>
         <div className={styles.logo}>
-          <div className={styles.logoIcon}><Icons.Logo /></div>
+          <div className={styles.logoIcon}>
+            <img src="/logo.png" alt="Snippy Logo" className={styles.logoImg} />
+          </div>
           <span>Snip<em>py</em></span>
         </div>
 
