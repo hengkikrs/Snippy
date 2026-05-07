@@ -3,15 +3,15 @@ import { Icons } from './Icons'
 import styles from './Modal.module.css'
 
 export function Modal({ open, initial, onClose, onSave }) {
-  const [form, setForm] = useState({ title: '', content: '', tags: '' })
+  const [form, setForm] = useState({ title: '', content: '', tags: '', copyNumber: '' })
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (open) {
       setForm(
         initial
-          ? { title: initial.title, content: initial.content, tags: initial.tags.join(', ') }
-          : { title: '', content: '', tags: '' }
+          ? { title: initial.title, content: initial.content, tags: initial.tags.join(', '), copyNumber: initial.copyNumber || '' }
+          : { title: '', content: '', tags: '', copyNumber: '' }
       )
       setTimeout(() => inputRef.current?.focus(), 50)
     }
@@ -26,7 +26,7 @@ export function Modal({ open, initial, onClose, onSave }) {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean)
-    onSave({ ...form, tags })
+    onSave({ ...form, tags, copyNumber: form.copyNumber.trim() })
   }
 
   const handleKey = (e) => {
@@ -76,6 +76,16 @@ export function Modal({ open, initial, onClose, onSave }) {
               value={form.tags}
               onChange={handle('tags')}
               placeholder="Prompt, Marketing, Code..."
+            />
+          </label>
+          <label>
+            Nomor/Tombol Copy <span style={{ fontWeight: 400 }}>(opsional, max 1 karakter)</span>
+            <input
+              type="text"
+              value={form.copyNumber}
+              onChange={handle('copyNumber')}
+              placeholder="Misal: 1, 2, a, b..."
+              maxLength={1}
             />
           </label>
         </div>

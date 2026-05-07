@@ -20,8 +20,8 @@ export function useSnippets() {
       .finally(() => setLoading(false))
   }, [])
 
-  const addSnippet = useCallback(async ({ title, content, tags }) => {
-    const snippet = await createSnippet({ title, content, tags })
+  const addSnippet = useCallback(async ({ title, content, tags, copyNumber }) => {
+    const snippet = await createSnippet({ title, content, tags, copyNumber })
     setSnippets((s) => [snippet, ...s])
     return snippet
   }, [])

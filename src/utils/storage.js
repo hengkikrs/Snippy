@@ -14,12 +14,13 @@ export async function fetchSnippets() {
   return data
 }
 
-export async function createSnippet({ title, content, tags }) {
+export async function createSnippet({ title, content, tags, copyNumber }) {
   const snippet = {
     id: uid(),
     title,
     content,
     tags,
+    copyNumber,
     pinned: false,
     created: Date.now(),
     order: 0,

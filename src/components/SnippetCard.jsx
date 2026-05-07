@@ -55,9 +55,9 @@ export function SnippetCard({ snippet, index, onCopy, onEdit, onDelete, onToggle
         <span className={styles.dragHandle} onClick={(e) => e.stopPropagation()}>
           <Icons.Drag />
         </span>
-        {index < 9 && (
-          <span className={styles.numBadge} title={"Tekan " + (index + 1) + " untuk copy"}>
-            {index + 1}
+        {(snippet.copyNumber || index < 9) && (
+          <span className={styles.numBadge} title={"Tekan " + (snippet.copyNumber || index + 1) + " untuk copy"}>
+            {snippet.copyNumber || index + 1}
           </span>
         )}
         <span className={styles.cardTitle}>{snippet.title}</span>

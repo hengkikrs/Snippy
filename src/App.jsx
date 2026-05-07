@@ -93,13 +93,22 @@ export default function App() {
         return
       }
       if (!isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const num = parseInt(e.key)
-        if (num >= 1 && num <= 9) {
-          const snippet = filteredRef.current[num - 1]
-          if (!snippet) return
-          navigator.clipboard.writeText(snippet.content).then(() => {
-            addToast(`#${num} "${snippet.title}" disalin ✓`)
-            trackEvent(EVENTS.COPY, snippet)
+        const keyStr = e.key.toLowerCase()
+        const customSnippet = filteredRef.current.find(s => s.copyNumber && String(s.copyNumber).toLowerCase() === keyStr)
+        
+        let targetSnippet = customSnippet
+        if (!targetSnippet) {
+          const num = parseInt(e.key)
+          if (num >= 1 && num <= 9) {
+            targetSnippet = filteredRef.current[num - 1]
+          }
+        }
+
+        if (targetSnippet) {
+          navigator.clipboard.writeText(targetSnippet.content).then(() => {
+            const displayKey = targetSnippet.copyNumber || e.key
+            addToast(`[${displayKey}] "${targetSnippet.title}" disalin ✓`)
+            trackEvent(EVENTS.COPY, targetSnippet)
           })
         }
       }
@@ -108,14 +117,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [addToast])
 
-  const handleSave = async ({ title, content, tags }) => {
+  const handleSave = async ({ title, content, tags, copyNumber }) => {
     try {
       if (modal.editing) {
-        await editSnippet(modal.editing.id, { title, content, tags })
+        await editSnippet(modal.editing.id, { title, content, tags, copyNumber })
         addToast('Snippet diperbarui ✓')
         trackEvent(EVENTS.EDIT, { id: modal.editing.id, title })
       } else {
-        const s = await addSnippet({ title, content, tags })
+        const s = await addSnippet({ title, content, tags, copyNumber })
         addToast('Snippet ditambahkan ✓')
         trackEvent(EVENTS.ADD, s)
       }
@@ -155,6 +164,7 @@ export default function App() {
         title: s.title,
         content: s.content,
         tags: s.tags || [],
+        copyNumber: s.copyNumber || '',
         pinned: s.pinned || false,
         created: s.created || Date.now(),
         order: i,
