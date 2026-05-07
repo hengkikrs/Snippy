@@ -8,6 +8,7 @@ import { Modal } from './components/Modal'
 import { Toast } from './components/Toast'
 import { Icons } from './components/Icons'
 import { ReportPage } from './components/ReportPage'
+import { PiPWindow } from './components/PiPWindow'
 
 import { useSnippets, useFilteredSnippets } from './hooks/useSnippets'
 import { useToast } from './hooks/useToast'
@@ -26,6 +27,7 @@ export default function App() {
   )
   const [modal, setModal] = useState({ open: false, editing: null })
   const [page, setPage] = useState('home') // 'home' | 'report'
+  const [isPip, setIsPip] = useState(false)
 
   const {
     snippets,
@@ -77,44 +79,45 @@ export default function App() {
   }, []) // eslint-disable-line
 
   // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e) => {
-      const tag = document.activeElement?.tagName
-      const isTyping = tag === 'INPUT' || tag === 'TEXTAREA'
+  const handleKeyDown = (e) => {
+    const tag = document.activeElement?.tagName
+    const isTyping = tag === 'INPUT' || tag === 'TEXTAREA'
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault()
-        document.querySelector('input[placeholder*="Cari"]')?.focus()
-        return
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault()
-        setModal({ open: true, editing: null })
-        return
-      }
-      if (!isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const keyStr = e.key.toLowerCase()
-        const customSnippet = filteredRef.current.find(s => s.copyNumber && String(s.copyNumber).toLowerCase() === keyStr)
-        
-        let targetSnippet = customSnippet
-        if (!targetSnippet) {
-          const num = parseInt(e.key)
-          if (num >= 1 && num <= 9) {
-            targetSnippet = filteredRef.current[num - 1]
-          }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault()
+      document.querySelector('input[placeholder*="Cari"]')?.focus()
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault()
+      setModal({ open: true, editing: null })
+      return
+    }
+    if (!isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const keyStr = e.key.toLowerCase()
+      const customSnippet = filteredRef.current.find(s => s.copyNumber && String(s.copyNumber).toLowerCase() === keyStr)
+      
+      let targetSnippet = customSnippet
+      if (!targetSnippet) {
+        const num = parseInt(e.key)
+        if (num >= 1 && num <= 9) {
+          targetSnippet = filteredRef.current[num - 1]
         }
+      }
 
-        if (targetSnippet) {
-          navigator.clipboard.writeText(targetSnippet.content).then(() => {
-            const displayKey = targetSnippet.copyNumber || e.key
-            addToast(`[${displayKey}] "${targetSnippet.title}" disalin ✓`)
-            trackEvent(EVENTS.COPY, targetSnippet)
-          })
-        }
+      if (targetSnippet) {
+        navigator.clipboard.writeText(targetSnippet.content).then(() => {
+          const displayKey = targetSnippet.copyNumber || e.key
+          addToast(`[${displayKey}] "${targetSnippet.title}" disalin ✓`)
+          trackEvent(EVENTS.COPY, targetSnippet)
+        })
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+  }
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [addToast])
 
   const handleSave = async ({ title, content, tags, copyNumber }) => {
@@ -225,8 +228,8 @@ export default function App() {
     )
   }
 
-  return (
-    <div className={styles.app}>
+  const appContent = (
+    <div className={styles.app} style={isPip ? { height: '100vh', overflowY: 'auto' } : undefined}>
       <Header
         search={search}
         onSearch={setSearch}
@@ -254,6 +257,15 @@ export default function App() {
               <kbd>1</kbd>–<kbd>9</kbd> copy
             </span>
             <div className={styles.viewToggle}>
+              {!isPip && (
+                <button
+                  className={styles.viewBtn}
+                  onClick={() => setIsPip(true)}
+                  title="Buka Floating Window (PiP)"
+                >
+                  <Icons.Pip />
+                </button>
+              )}
               <button
                 className={styles.viewBtn}
                 onClick={handleSortByCopyNumber}
@@ -318,4 +330,21 @@ export default function App() {
       <Toast toasts={toasts} />
     </div>
   )
+
+  if (isPip) {
+    return (
+      <div className={styles.app} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center', gap: '1rem', padding: '2rem' }}>
+        <Icons.Pip />
+        <h2>Snippy sedang berjalan di Floating Window</h2>
+        <p style={{ color: 'var(--text-muted)' }}>Jendela kecil sekarang mengambang di layar kamu.</p>
+        <button className="btn btn-primary" onClick={() => setIsPip(false)}>Kembali ke Main Window</button>
+        
+        <PiPWindow onClose={() => setIsPip(false)} onKeyDown={handleKeyDown}>
+          {appContent}
+        </PiPWindow>
+      </div>
+    )
+  }
+
+  return appContent
 }

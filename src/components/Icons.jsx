@@ -119,4 +119,10 @@ export const Icons = {
       <line x1="17" y1="17" x2="17" y2="7" />
     </svg>
   ),
+  Pip: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 9V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h4" />
+      <rect x="12" y="13" width="10" height="7" rx="1" />
+    </svg>
+  ),
 }
