@@ -153,6 +153,31 @@ export default function App() {
     }
   }
 
+  const handleSortByCopyNumber = () => {
+    if (!window.confirm('Urutkan semua snippet berdasarkan nomor copy kustom?')) return
+    const sorted = [...snippets].sort((a, b) => {
+      const aVal = a.copyNumber ? String(a.copyNumber) : ''
+      const bVal = b.copyNumber ? String(b.copyNumber) : ''
+      
+      const aNum = parseInt(aVal, 10)
+      const bNum = parseInt(bVal, 10)
+      
+      const aIsNum = !isNaN(aNum)
+      const bIsNum = !isNaN(bNum)
+      
+      if (aIsNum && bIsNum) return aNum - bNum
+      if (aIsNum && !bIsNum) return -1
+      if (!aIsNum && bIsNum) return 1
+      if (aVal && !bVal) return -1
+      if (!aVal && bVal) return 1
+      return aVal.localeCompare(bVal)
+    })
+    
+    const orderedIds = sorted.map(s => s.id)
+    reorder(orderedIds)
+    addToast('Diurutkan berdasarkan nomor copy ✓')
+  }
+
   const handleExport = () => { exportJSON(snippets); trackEvent(EVENTS.EXPORT) }
 
   const handleImport = async (file) => {
@@ -229,6 +254,13 @@ export default function App() {
               <kbd>1</kbd>–<kbd>9</kbd> copy
             </span>
             <div className={styles.viewToggle}>
+              <button
+                className={styles.viewBtn}
+                onClick={handleSortByCopyNumber}
+                title="Urutkan by Copy Number"
+              >
+                <Icons.Sort />
+              </button>
               <button
                 className={`${styles.viewBtn} ${view === 'grid' ? styles.active : ''}`}
                 onClick={() => setView('grid')}
